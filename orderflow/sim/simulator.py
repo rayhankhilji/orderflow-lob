@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol
 
 import numpy as np
@@ -66,6 +66,11 @@ class SimResult:
     participant_fills: dict[str, list[Fill]]
     event_times_by_type: dict[str, np.ndarray]
     horizon: float = 0.0
+    # flow-originated events only (first BookEvent of each flow action), and —
+    # when record_state_every_event=True — the L2 state seen just BEFORE each,
+    # as rows [bid_prices(L), bid_qtys(L), ask_prices(L), ask_qtys(L), t]
+    flow_events: list[BookEvent] = field(default_factory=list)
+    event_states: np.ndarray = field(default_factory=lambda: np.empty((0, 0)))
 
 
 def seed_book(
@@ -110,6 +115,8 @@ class Simulator:
         flow: FlowModel,
         seed: int,
         participants: tuple[Participant, ...] | list[Participant] = (),
+        record_state_every_event: bool = False,
+        state_levels: int = 5,
     ) -> None:
         self.book = book
         self.flow = flow
@@ -122,6 +129,10 @@ class Simulator:
         self._owners: dict[int, str] = {}
         self._event_times: dict[str, list[float]] = {k: [] for k in EVENT_TYPES}
         self._fill_cursor = 0
+        self._record_state = record_state_every_event
+        self._state_levels = state_levels
+        self.flow_events: list[BookEvent] = []
+        self._event_states: list[np.ndarray] = []
         self._mid_series: list[tuple[float, float]] = []
         if self._last_mid:
             self._mid_series.append((0.0, self._last_mid))
@@ -255,7 +266,7 @@ class Simulator:
             if w is not None and (wake is None or w < wake):
                 wake = w
         if wake is not None and wake <= t_event:
-            self.t = wake
+            self.t = max(wake, self.t)
             events: list[BookEvent] = []
             for p in self.participants:
                 w = p.next_wakeup(self.t)
@@ -266,7 +277,18 @@ class Simulator:
             return events[0] if events else BookEvent(self.t, EventType.MODIFY, None, None, 0, -1)
         self._pending = None
         self.t = t_event
+        if self._record_state:
+            snap = self.book.snapshot(self._state_levels)
+            row = np.concatenate(
+                [snap.bid_prices, snap.bid_qtys, snap.ask_prices, snap.ask_qtys, [self.t]]
+            )
+        else:
+            row = None
         events = self._apply_action(action, self.t)
+        if events:
+            self.flow_events.append(events[0])
+            if row is not None:
+                self._event_states.append(row)
         self._digest(events, self.t)
         return events[0] if events else BookEvent(self.t, EventType.MODIFY, None, None, 0, -1)
 
@@ -275,11 +297,13 @@ class Simulator:
         next_snap = snapshot_every if snapshot_every else np.inf
         n_events0 = len(self.book.events)
         n_fills0 = len(self.book.fills)
+        n_flow0 = len(self.flow_events)
         while self.t < horizon:
             self.step()
             if snapshot_every and self.t >= next_snap:
                 snapshots.append(self.book.snapshot(levels=10))
-                next_snap += snapshot_every
+                while next_snap <= self.t:
+                    next_snap += snapshot_every
         # trailing snapshot state not needed; final digest already done in step
         events = self.book.events[n_events0:]
         fills = self.book.fills[n_fills0:]
@@ -291,4 +315,8 @@ class Simulator:
             participant_fills=self.participant_fills,
             event_times_by_type={k: np.array(v, dtype=float) for k, v in self._event_times.items()},
             horizon=horizon,
+            flow_events=self.flow_events[n_flow0:],
+            event_states=np.asarray(self._event_states[n_flow0:], dtype=np.float64).reshape(
+                -1, 4 * self._state_levels + 1
+            ),
         )
