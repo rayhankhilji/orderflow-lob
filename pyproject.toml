@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "orderflow"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "torch>=2.2.2,<2.3",
+    "numpy>=1.26,<2",
+    "scipy>=1.11,<1.14",
+    "pandas>=2.0",
+    "gymnasium>=0.29",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "hypothesis", "ruff"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["orderflow"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
