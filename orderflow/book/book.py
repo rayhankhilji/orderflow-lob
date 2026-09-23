@@ -263,18 +263,20 @@ class LimitOrderBook:
         return fills
 
     # ------------------------------------------------------------------- L1
-    def _visible_prices(self, side: Side) -> list[int]:
-        """Prices that carry displayed liquidity (drive L1)."""
+    def _best_visible(self, side: Side) -> int | None:
+        """Best price with displayed liquidity, scanning from the best end."""
         levels, prices = self._levels(side)
-        return [p for p in prices if levels[p].visible_qty > 0]
+        it = reversed(prices) if side is Side.BUY else iter(prices)
+        for p in it:
+            if levels[p].visible_qty > 0:
+                return p
+        return None
 
     def best_bid(self) -> int | None:
-        visible = self._visible_prices(Side.BUY)
-        return visible[-1] if visible else None
+        return self._best_visible(Side.BUY)
 
     def best_ask(self) -> int | None:
-        visible = self._visible_prices(Side.SELL)
-        return visible[0] if visible else None
+        return self._best_visible(Side.SELL)
 
     def mid(self) -> float | None:
         b, a = self.best_bid(), self.best_ask()
