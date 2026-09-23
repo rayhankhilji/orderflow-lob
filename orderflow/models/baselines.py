@@ -63,14 +63,24 @@ class MarkovBaseline:
 
 
 class _SupervisedBase:
-    """Shared fit/predict plumbing for torch models on flattened states."""
+    """Shared fit/predict plumbing for torch models on flattened states.
 
-    def _targets_and_shapes(self):
-        raise NotImplementedError
+    States are standardised with train-set mean/std (stored on the predictor)
+    because raw features like rolling OFI are O(1e3) and blow up plain SGD.
+    """
 
-    def _fit_loop(self, model: nn.Module, ds, epochs: int = 60, lr: float = 1e-2):
+    _x_mean: np.ndarray | None = None
+    _x_std: np.ndarray | None = None
+
+    def _norm(self, X: np.ndarray) -> np.ndarray:
+        if self._x_mean is None:
+            self._x_mean = np.asarray(X).mean(axis=0)
+            self._x_std = np.asarray(X).std(axis=0) + 1e-6
+        return (np.asarray(X) - self._x_mean) / self._x_std
+
+    def _fit_loop(self, model: nn.Module, ds, epochs: int = 40, lr: float = 1e-2):
         flat, _ = _flat(ds)
-        X = torch.tensor(np.asarray(flat["state"]), dtype=torch.float32)
+        X = torch.tensor(self._norm(np.asarray(flat["state"])), dtype=torch.float32)
         Ys = {k: torch.tensor(np.asarray(flat[k])) for k in self.targets if k in flat}
         opt = torch.optim.Adam(model.parameters(), lr=lr)
         for _ in range(epochs):
@@ -130,7 +140,7 @@ class LogisticBaseline(_SupervisedBase):
         flat, _ = _flat(train)
         for k in self._GAUSS:
             if k in flat:
-                X = torch.tensor(np.asarray(flat["state"]), dtype=torch.float32)
+                X = torch.tensor(self._norm(np.asarray(flat["state"])), dtype=torch.float32)
                 with torch.no_grad():
                     resid = flat[k] - self.heads[k](X).squeeze(-1).numpy()
                 self.gauss_sigma[k] = float(np.std(resid)) or 1.0
@@ -139,7 +149,7 @@ class LogisticBaseline(_SupervisedBase):
     def predict(self, batch: dict[str, torch.Tensor]) -> dict[str, np.ndarray | tuple]:
         X = batch["state"].float()
         B_, T, _ = X.shape
-        flat_X = X.reshape(-1, X.shape[-1])
+        flat_X = torch.tensor(self._norm(X.reshape(-1, X.shape[-1]).numpy()), dtype=torch.float32)
         out: dict[str, np.ndarray | tuple] = {}
         with torch.no_grad():
             for k in self.targets:
@@ -177,9 +187,9 @@ class MLPBaseline(_SupervisedBase):
         return LogisticBaseline._loss(self, out, Ys)
 
     def fit(self, train, val=None) -> MLPBaseline:
-        self._fit_loop(self._model, train, epochs=80)
+        self._fit_loop(self._model, train, epochs=25)
         flat, _ = _flat(train)
-        X = torch.tensor(np.asarray(flat["state"]), dtype=torch.float32)
+        X = torch.tensor(self._norm(np.asarray(flat["state"])), dtype=torch.float32)
         with torch.no_grad():
             emb = self.trunk(X)
             for k in self._GAUSS:
@@ -191,7 +201,7 @@ class MLPBaseline(_SupervisedBase):
     def predict(self, batch: dict[str, torch.Tensor]) -> dict[str, np.ndarray | tuple]:
         X = batch["state"].float()
         B_, T, _ = X.shape
-        flat_X = X.reshape(-1, X.shape[-1])
+        flat_X = torch.tensor(self._norm(X.reshape(-1, X.shape[-1]).numpy()), dtype=torch.float32)
         with torch.no_grad():
             emb = self.trunk(flat_X)
             out: dict[str, np.ndarray | tuple] = {}

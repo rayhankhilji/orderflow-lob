@@ -70,7 +70,10 @@ class OrderFlowTransformer(nn.Module):
         self.size_emb = nn.Embedding(c.B, c.d_model)
         self.dt_proj = nn.Linear(1, c.d_model)
         self.state_mlp = nn.Sequential(
-            nn.Linear(c.state_dim, c.d_model), nn.GELU(), nn.Linear(c.d_model, c.d_model)
+            nn.LayerNorm(c.state_dim),
+            nn.Linear(c.state_dim, c.d_model),
+            nn.GELU(),
+            nn.Linear(c.d_model, c.d_model),
         )
         self.pos_emb = nn.Parameter(torch.zeros(1, c.seq_len, c.d_model))
         layer = nn.TransformerEncoderLayer(
