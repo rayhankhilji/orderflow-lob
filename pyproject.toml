@@ -12,6 +12,10 @@ dependencies = [
     "scipy>=1.11,<1.14",
     "pandas>=2.0",
     "gymnasium>=0.29",
+    "matplotlib>=3.8",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+    "websockets>=12",
 ]
 
 [project.optional-dependencies]
