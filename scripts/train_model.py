@@ -80,7 +80,7 @@ def main() -> None:
     if args.quick:
         episodes, horizon = min(args.episodes, 6), min(args.horizon, 300.0)
         mcfg = TransformerConfig(d_model=64, n_layers=2, n_heads=4, seq_len=args.seq_len)
-        tcfg = TrainConfig(epochs=2, batch=64)
+        tcfg = TrainConfig(epochs=5, batch=16, lr=1e-3)
     else:
         episodes, horizon = args.episodes, args.horizon
         mcfg = TransformerConfig(seq_len=args.seq_len)

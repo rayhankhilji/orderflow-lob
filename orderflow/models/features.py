@@ -126,6 +126,14 @@ def tokenize(
         lo = max(0, i - 19)
         ofi_w[i] = ofis[lo : i + 1].sum()
 
+    # one-sided books leave mid NaN: interpolate over event times
+    good = np.isfinite(mid_at)
+    if not good.all():
+        if good.any():
+            mid_at = np.interp(times, times[good], mid_at[good])
+        else:
+            mid_at = np.zeros(n)
+
     # realised vol: std of last 50 mid changes (ticks)
     dmid = np.diff(mid_at, prepend=mid_at[0])
     for i in range(n):
@@ -149,6 +157,7 @@ def tokenize(
             abq / mean_depth,
         ]
     ).astype(np.float32)
+    np.nan_to_num(state, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
     assert state.shape[1] == STATE_DIM
 
     # size bins: quantiles fit on this stream unless provided

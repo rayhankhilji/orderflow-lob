@@ -107,10 +107,18 @@ class LogisticBaseline(_SupervisedBase):
         "cancel_prob",
         "queue_depletion",
         "next_type",
+        "next_level",
+        "next_size",
         "short_vol",
         "next_log_dt",
     ]
-    _NCLASS: ClassVar = {"mid_move": 3, "spread_change": 5, "next_type": N_TYPES}
+    _NCLASS: ClassVar = {
+        "mid_move": 3,
+        "spread_change": 5,
+        "next_type": N_TYPES,
+        "next_level": 6,
+        "next_size": 8,
+    }
     _GAUSS: ClassVar = {"short_vol", "next_log_dt"}
 
     def __init__(self, state_dim: int = STATE_DIM) -> None:
