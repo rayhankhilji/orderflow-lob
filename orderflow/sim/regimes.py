@@ -116,6 +116,30 @@ REGIMES: dict[str, dict[str, tuple[dict, dict]]] = {
             {"mid_ticks": 10_000, "levels": 10, "qty_per_level": 8},
         ),
     },
+    # high-volume regime for the $10M/30-min execution benchmark:
+    # limit posting must outrun market takers or the book starves (measured:
+    # mu_l=1.2 leaves the bid side empty ~45% of the time and metaorders can't
+    # fill). mu_l=4.0 keeps the contra side stocked ~97%, ~750k shares natural
+    # one-sided volume per 1800 s -> a 100k-share metaorder is ~13%
+    # participation.
+    "exec": {
+        "hawkes": (
+            {
+                **_hawkes(1.0, 1.0),
+                "mu": np.array([4.0, 4.0, 3.0, 3.0, 0.9, 0.9]),
+                "size_mu": 4.2,
+            },
+            {"mid_ticks": 10_000, "levels": 15, "qty_per_level": 120},
+        ),
+        "zi": (
+            {**_zi(4.0, 3.0, 0.08), "size_mu": 4.2},
+            {"mid_ticks": 10_000, "levels": 15, "qty_per_level": 120},
+        ),
+        "queue_reactive": (
+            {**_qr(3.0, 4.0, 60.0), "size_mu": 4.2},
+            {"mid_ticks": 10_000, "levels": 15, "qty_per_level": 120},
+        ),
+    },
 }
 
 
