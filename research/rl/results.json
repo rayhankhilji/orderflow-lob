@@ -1,0 +1,89 @@
+{
+  "seed": 5,
+  "task": [
+    20000,
+    600.0,
+    10.0
+  ],
+  "arms": {
+    "ppo_rp0.0": {
+      "runs": 5.0,
+      "mean_is_bps": 1.3905190033418784,
+      "std_is_bps": 16.101033136998073,
+      "cvar95_is_bps": 28.825181114163723,
+      "worst_is_bps": 28.825181114163723,
+      "mean_is_dollars": 279.1579999999609,
+      "completion_rate": 1.0,
+      "mean_fill_rate": 1.0,
+      "mean_participation": 0.039948711146838414,
+      "mean_spread_impact": 589.8239999999946,
+      "mean_timing": -310.66600000001847,
+      "cost_over_std": 0.08636209810329258,
+      "train_seconds": 319.7,
+      "final_ep_ret": -11.311844407779606,
+      "train_episodes": 40
+    },
+    "ppo_rp0.5": {
+      "runs": 5.0,
+      "mean_is_bps": 0.9728725326360383,
+      "std_is_bps": 16.082686287899786,
+      "cvar95_is_bps": 28.825181114163723,
+      "worst_is_bps": 28.825181114163723,
+      "mean_is_dollars": 195.6119999999646,
+      "completion_rate": 1.0,
+      "mean_fill_rate": 1.0,
+      "mean_participation": 0.039950889132070996,
+      "mean_spread_impact": 622.4689999999944,
+      "mean_timing": -426.85700000001754,
+      "cost_over_std": 0.06049191753295238,
+      "train_seconds": 225.1,
+      "final_ep_ret": -11.48977207893296,
+      "train_episodes": 40
+    },
+    "ppo_rp2.0": {
+      "runs": 5.0,
+      "mean_is_bps": 1.8283775995811162,
+      "std_is_bps": 20.829475330366865,
+      "cvar95_is_bps": 38.34304271796088,
+      "worst_is_bps": 38.34304271796088,
+      "mean_is_dollars": 366.95,
+      "completion_rate": 1.0,
+      "mean_fill_rate": 1.0,
+      "mean_participation": 0.03991926817813819,
+      "mean_spread_impact": 485.341000000007,
+      "mean_timing": -118.39100000001181,
+      "cost_over_std": 0.08777837994389971,
+      "train_seconds": 204.4,
+      "final_ep_ret": -12.600310204381046,
+      "train_episodes": 40
+    },
+    "twap": {
+      "runs": 5.0,
+      "mean_is_bps": -2.5336184767294427,
+      "std_is_bps": 13.822594454400887,
+      "cvar95_is_bps": 16.57889472368185,
+      "worst_is_bps": 16.57889472368185,
+      "mean_is_dollars": -507.0679999999702,
+      "completion_rate": 1.0,
+      "mean_fill_rate": 1.0,
+      "mean_participation": 0.039815861418510776,
+      "mean_spread_impact": 837.9610000000037,
+      "mean_timing": -1345.0290000000193,
+      "cost_over_std": -0.1832954359680716
+    },
+    "ac": {
+      "runs": 5.0,
+      "mean_is_bps": -3.567583315538042,
+      "std_is_bps": 7.389674548547014,
+      "cvar95_is_bps": 2.4495174276145146,
+      "worst_is_bps": 2.4495174276145146,
+      "mean_is_dollars": -713.7039999999572,
+      "completion_rate": 1.0,
+      "mean_fill_rate": 1.0,
+      "mean_participation": 0.0399415061265394,
+      "mean_spread_impact": 801.168000000005,
+      "mean_timing": -1514.8720000000199,
+      "cost_over_std": -0.48277949077460125
+    }
+  }
+}
