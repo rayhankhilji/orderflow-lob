@@ -116,6 +116,23 @@ REGIMES: dict[str, dict[str, tuple[dict, dict]]] = {
             {"mid_ticks": 10_000, "levels": 10, "qty_per_level": 8},
         ),
     },
+    # stressed: exec-rate flow against a thin *displayed* book with heavy
+    # hidden/iceberg liquidity — the tape looks fast but visible depth lies
+    # about resilience. Cancel churn is high; L2-based signals degrade.
+    "stressed": {
+        "hawkes": (
+            {**_hawkes(1.6, 1.4), "p_hidden": 0.25, "p_iceberg": 0.20},
+            {"mid_ticks": 10_000, "levels": 12, "qty_per_level": 25},
+        ),
+        "zi": (
+            {**_zi(1.6, 2.5, 0.15), "p_hidden": 0.25, "p_iceberg": 0.20},
+            {"mid_ticks": 10_000, "levels": 12, "qty_per_level": 18},
+        ),
+        "queue_reactive": (
+            _qr(1.6, 2.5, 15.0),
+            {"mid_ticks": 10_000, "levels": 12, "qty_per_level": 18},
+        ),
+    },
     # high-volume regime for the $10M/30-min execution benchmark:
     # limit posting must outrun market takers or the book starves (measured:
     # mu_l=1.2 leaves the bid side empty ~45% of the time and metaorders can't
