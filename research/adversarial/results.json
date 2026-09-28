@@ -1,0 +1,131 @@
+{
+  "task": [
+    20000,
+    600.0,
+    10.0
+  ],
+  "seeds": [
+    51,
+    52,
+    53,
+    54
+  ],
+  "matrix": {
+    "twap": {
+      "none": {
+        "mean_is_bps": 4.2059232690444945,
+        "fill_rate": 1.0
+      },
+      "spoofer": {
+        "mean_is_bps": 2.261700428572797,
+        "fill_rate": 1.0
+      },
+      "igniter": {
+        "mean_is_bps": 0.24944840852117167,
+        "fill_rate": 0.9974125
+      },
+      "withdrawer": {
+        "mean_is_bps": -25.169638662797812,
+        "fill_rate": 1.0
+      },
+      "frontrunner": {
+        "mean_is_bps": -10.491616733490554,
+        "fill_rate": 1.0
+      },
+      "pennyjumper": {
+        "mean_is_bps": 3.941817231146137,
+        "fill_rate": 1.0
+      },
+      "combined": {
+        "mean_is_bps": -25.643638687119964,
+        "fill_rate": 0.9978875
+      }
+    },
+    "twap_passive": {
+      "none": {
+        "mean_is_bps": 0.010766920313918044,
+        "fill_rate": 1.0
+      },
+      "spoofer": {
+        "mean_is_bps": -4.786714553420396,
+        "fill_rate": 1.0
+      },
+      "igniter": {
+        "mean_is_bps": 0.32386955321363475,
+        "fill_rate": 1.0
+      },
+      "withdrawer": {
+        "mean_is_bps": 3333.868286175375,
+        "fill_rate": 1.0
+      },
+      "frontrunner": {
+        "mean_is_bps": -14.364028770927929,
+        "fill_rate": 0.985
+      },
+      "pennyjumper": {
+        "mean_is_bps": 1.565198159093997,
+        "fill_rate": 1.0
+      },
+      "combined": {
+        "mean_is_bps": 120.34804375614718,
+        "fill_rate": 1.0
+      }
+    },
+    "ac": {
+      "none": {
+        "mean_is_bps": 3.309738597008188,
+        "fill_rate": 1.0
+      },
+      "spoofer": {
+        "mean_is_bps": -2.5213760902942886,
+        "fill_rate": 1.0
+      },
+      "igniter": {
+        "mean_is_bps": -8.939080002562115,
+        "fill_rate": 1.0
+      },
+      "withdrawer": {
+        "mean_is_bps": -20.673772998497274,
+        "fill_rate": 1.0
+      },
+      "frontrunner": {
+        "mean_is_bps": -23.05267709967108,
+        "fill_rate": 0.997
+      },
+      "pennyjumper": {
+        "mean_is_bps": 11.278785882739564,
+        "fill_rate": 1.0
+      },
+      "combined": {
+        "mean_is_bps": -4.208442136328285,
+        "fill_rate": 1.0
+      }
+    }
+  },
+  "uplift_bps": {
+    "twap": {
+      "spoofer": -1.9442228404716975,
+      "igniter": -3.956474860523323,
+      "withdrawer": -29.375561931842306,
+      "frontrunner": -14.69754000253505,
+      "pennyjumper": -0.26410603789835774,
+      "combined": -29.849561956164457
+    },
+    "twap_passive": {
+      "spoofer": -4.797481473734313,
+      "igniter": 0.31310263289971674,
+      "withdrawer": 3333.857519255061,
+      "frontrunner": -14.374795691241847,
+      "pennyjumper": 1.554431238780079,
+      "combined": 120.33727683583326
+    },
+    "ac": {
+      "spoofer": -5.831114687302477,
+      "igniter": -12.248818599570303,
+      "withdrawer": -23.983511595505462,
+      "frontrunner": -26.362415696679268,
+      "pennyjumper": 7.969047285731376,
+      "combined": -7.518180733336473
+    }
+  }
+}
