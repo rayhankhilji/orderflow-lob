@@ -245,9 +245,80 @@ class Frontrunner:
         return [self._mo(Side(-self.det.side), self.unwind_qty, t)]
 
 
+class PennyJumper:
+    """Steps one tick ahead of large *passive* posts.
+
+    Where the other four key on market-order footprints, the jumper watches
+    for sizeable limit submits at the touch — the passive exec's working
+    order. It replies with a small order one tick *inside* the exec's price,
+    taking queue priority, so natural contra flow fills the jumper first and
+    the exec's order languishes behind it until the price moves or the exec
+    is forced to cross the spread. The mechanism is queue-jumping, not
+    footprint-chasing: it hurts exactly the strategies (passive posting,
+    pegging) that spoofing/ignition barely touch.
+    """
+
+    def __init__(
+        self,
+        footprint_qty: int = 150,
+        jump_qty: int = 60,
+        max_live: int = 6,
+        lifetime: float = 4.0,
+        name: str = "adv_pennyjump",
+    ) -> None:
+        self.name = name
+        self._my_ids: set[int] = set()
+        self.footprint_qty = footprint_qty
+        self.jump_qty = jump_qty
+        self.max_live = max_live
+        self.lifetime = lifetime
+        self._live: list[tuple[float, int]] = []
+        self._next_id = 1 << 33
+
+    def on_event(self, book: LimitOrderBook, ev: BookEvent, t: float):
+        if ev.order_id in self._my_ids:
+            return []
+        if ev.type is not EventType.SUBMIT or ev.is_market:
+            return []
+        if ev.qty < self.footprint_qty or ev.price is None:
+            return []
+        # only jump posts sitting at the touch: jumping a deep order is free
+        # anyway, the harm is done at the queue head
+        best = book.best_bid() if ev.side is Side.BUY else book.best_ask()
+        if best is None or ev.price != best:
+            return []
+        jump_price = ev.price + 1 if ev.side is Side.BUY else ev.price - 1
+        oid = self._next_id
+        self._next_id += 1
+        self._my_ids.add(oid)
+        self._live.append((t + self.lifetime, oid))
+        if len(self._live) > self.max_live:
+            self._live.pop(0)
+        return [
+            Order(
+                order_id=oid,
+                side=ev.side,
+                price=jump_price,
+                qty=self.jump_qty,
+                remaining=self.jump_qty,
+                timestamp=t,
+                order_type=OrderType.LIMIT,
+            )
+        ]
+
+    def next_wakeup(self, t: float) -> float | None:
+        return min((w for w, _ in self._live), default=None)
+
+    def on_time(self, book: LimitOrderBook, t: float):
+        out = [CancelOrder(oid) for w, oid in self._live if w <= t]
+        self._live = [(w, oid) for w, oid in self._live if w > t]
+        return out
+
+
 ADVERSARIES = {
     "spoofer": Spoofer,
     "igniter": MomentumIgniter,
     "withdrawer": LiquidityWithdrawer,
     "frontrunner": Frontrunner,
+    "pennyjumper": PennyJumper,
 }
