@@ -1,0 +1,1 @@
+{"regimes": ["calm", "exec", "normal", "stressed", "thin", "volatile"], "flows": ["hawkes", "zi", "queue_reactive"], "algos": ["ac", "ac_adaptive", "learned", "rl", "twap", "twap_capped", "twap_passive", "vwap"], "adversaries": ["frontrunner", "igniter", "pennyjumper", "spoofer", "withdrawer"]}

@@ -14,7 +14,7 @@ import numpy as np
 
 import orderflow.execution  # noqa: F401 - populates the registry
 from orderflow.book.book import LimitOrderBook
-from orderflow.book.types import Side
+from orderflow.book.types import Order, Side
 from orderflow.execution.base import AlgoParticipant
 from orderflow.execution.cost import CostBreakdown, cost_breakdown, summarize
 from orderflow.execution.types import ExecutionTask
@@ -77,6 +77,96 @@ def run_episode(
         tick_size=tick_size,
         total_sim_volume=float(sum(f.qty for f in res.fills)),
     )
+
+
+class _Tracer(AlgoParticipant):
+    """AlgoParticipant that records a per-decision trace for the UI.
+
+    Rows are appended at each decision wake-up *after* fills are collected:
+    time, mid, remaining inventory, cumulative realized IS so far (approx —
+    recomputed exactly at the end by cost_breakdown), and the child orders
+    the algo emitted at this step.
+    """
+
+    def __init__(self, algo, task, tick_size: float = 0.01) -> None:
+        super().__init__(algo, task)
+        self.tick_size = tick_size
+        self.trace: list[dict] = []
+
+    def on_time(self, book, t):
+        reqs = super().on_time(book, t)
+        mid = book.mid()
+        children = [o for o in reqs if isinstance(o, Order)]
+        self.trace.append(
+            {
+                "t": round(float(t), 2),
+                "mid": (round(float(mid) * self.tick_size, 4) if mid is not None else None),
+                "remaining": int(self.remaining),
+                "filled": int(sum(f.qty for f in self._fills)),
+                "children": [
+                    {
+                        "kind": o.order_type.value,
+                        "qty": int(o.qty),
+                        "price": (
+                            round(float(o.price) * self.tick_size, 4)
+                            if o.price is not None
+                            else None
+                        ),
+                    }
+                    for o in children
+                ],
+            }
+        )
+        return reqs
+
+
+def run_episode_traced(
+    algo,
+    task: ExecutionTask,
+    flow_cls,
+    params: dict,
+    seed_kwargs: dict,
+    sim_seed: int,
+    tick_size: float = 0.01,
+    adversaries: tuple = (),
+) -> tuple[CostBreakdown, list[dict], list[dict]]:
+    """run_episode + a decision trace and exec-fill marks for the UI."""
+    rng = np.random.default_rng(sim_seed)
+    book = LimitOrderBook(tick_size=tick_size)
+    seed_book(book, rng=rng, **seed_kwargs)
+    algo.reset(task, book, np.random.default_rng(sim_seed + 7919))
+    adapter = _Tracer(algo, task, tick_size=tick_size)
+    sim = Simulator(
+        book,
+        flow_cls(dict(params)),
+        seed=sim_seed,
+        participants=[adapter, *adversaries],
+    )
+    res = sim.run(task.horizon + 1.0)
+    arrival = adapter._arrival_mid or 0.0
+    cb = cost_breakdown(
+        side=task.side,
+        requested_qty=task.total_qty,
+        fills=adapter._fills,
+        mid_series=res.mid_series,
+        arrival_mid_ticks=arrival,
+        tick_size=tick_size,
+        total_sim_volume=float(sum(f.qty for f in res.fills)),
+    )
+    fill_marks = [
+        {
+            "t": round(float(f.timestamp), 2),
+            "price": round(float(f.price) * tick_size, 4),
+            "qty": int(f.qty),
+        }
+        for f in adapter._fills
+    ]
+    mids = [
+        (round(float(t), 2), round(float(m) * tick_size, 4))
+        for t, m in res.mid_series
+    ]
+    step = max(1, len(mids) // 1500)
+    return cb, adapter.trace, {"mid_series": mids[::step], "fills": fill_marks}
 
 
 def paired_bootstrap(
