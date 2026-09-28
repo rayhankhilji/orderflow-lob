@@ -19,7 +19,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "hypothesis", "ruff"]
+dev = ["pytest", "hypothesis", "ruff", "httpx2"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["orderflow"]
