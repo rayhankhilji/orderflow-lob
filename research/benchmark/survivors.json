@@ -1,0 +1,24 @@
+{
+  "execution": {
+    "ac": true,
+    "ac@combined": false,
+    "twap": true,
+    "twap@combined": false,
+    "twap_passive": false,
+    "twap_passive@combined": false,
+    "vwap": true,
+    "vwap@combined": false
+  },
+  "prediction": {},
+  "scores_exec": {
+    "ac": 0.43783474324745136,
+    "ac@combined": -14.789848281966075,
+    "twap": 4.150126198295756,
+    "twap@combined": -2.2182730665504913,
+    "twap_passive": 7.683823696582865,
+    "twap_passive@combined": 825.3558147876065,
+    "vwap": 4.150126198295756,
+    "vwap@combined": -2.2182730665504913
+  },
+  "wins_pred": {}
+}
