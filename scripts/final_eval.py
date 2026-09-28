@@ -78,26 +78,13 @@ def train_mlp(seed: int) -> MLPBaseline:
     mlp = MLPBaseline()
     mlp.fit(train_ds, val_ds)
     MODELS.mkdir(parents=True, exist_ok=True)
-    torch.save(
-        {
-            "model": mlp._model.state_dict(),
-            "x_mean": mlp._x_mean,
-            "x_std": mlp._x_std,
-            "gauss_sigma": mlp.gauss_sigma,
-        },
-        MODELS / "mlp_mid_move.pt",
-    )
+    mlp.save(MODELS / "mlp_mid_move.pt")
     print(f"[final] mlp saved ({len(train_ds)} train windows)", flush=True)
     return mlp
 
 
 def load_mlp(path: Path) -> MLPBaseline:
-    ck = torch.load(path, map_location="cpu", weights_only=False)
-    mlp = MLPBaseline()
-    mlp._model.load_state_dict(ck["model"])
-    mlp._x_mean, mlp._x_std = ck["x_mean"], ck["x_std"]
-    mlp.gauss_sigma = ck["gauss_sigma"]
-    return mlp
+    return MLPBaseline.load(path)
 
 
 def train_ppo(seed: int, iters: int = 24, steps_per_iter: int = 480):

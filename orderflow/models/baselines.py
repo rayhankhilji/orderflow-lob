@@ -224,6 +224,27 @@ class MLPBaseline(_SupervisedBase):
                     out[k] = torch.sigmoid(h).squeeze(-1).reshape(B_, T).numpy()
         return out
 
+    def save(self, path) -> None:
+        """Composite checkpoint: weights + input normalizer + Gaussian sigmas."""
+        torch.save(
+            {
+                "model": self._model.state_dict(),
+                "x_mean": self._x_mean,
+                "x_std": self._x_std,
+                "gauss_sigma": self.gauss_sigma,
+            },
+            path,
+        )
+
+    @classmethod
+    def load(cls, path) -> MLPBaseline:
+        ck = torch.load(path, map_location="cpu", weights_only=False)
+        mlp = cls()
+        mlp._model.load_state_dict(ck["model"])
+        mlp._x_mean, mlp._x_std = ck["x_mean"], ck["x_std"]
+        mlp.gauss_sigma = ck["gauss_sigma"]
+        return mlp
+
 
 class _MLPJoint(nn.Module):
     def __init__(self, trunk, heads) -> None:

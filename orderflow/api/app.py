@@ -125,6 +125,30 @@ def _run_sim(req: SimRequest) -> dict:
     }
 
 
+_MODELS_DIR = Path("artifacts/models")
+
+
+def _make_algo(req: ExecRequest, side: Side):
+    """Build the algo, attaching trained checkpoints when available.
+
+    `learned` needs artifacts/models/mlp_mid_move.pt and `rl` needs
+    artifacts/models/ppo_exec.pt (both written by scripts/final_eval.py).
+    Without them they degrade to plain AC / TWAP-slice behavior.
+    """
+    if req.algo == "learned" and (_MODELS_DIR / "mlp_mid_move.pt").exists():
+        from orderflow.execution.learned import LearnedPolicy, TorchSignal
+        from orderflow.models.baselines import MLPBaseline
+
+        return LearnedPolicy(
+            predictor=TorchSignal(MLPBaseline.load(_MODELS_DIR / "mlp_mid_move.pt"), side)
+        )
+    if req.algo == "rl" and (_MODELS_DIR / "ppo_exec.pt").exists():
+        from orderflow.execution.rl.policy import RLExecution
+
+        return RLExecution().load_policy(str(_MODELS_DIR / "ppo_exec.pt"))
+    return get_execution(req.algo)()
+
+
 def _run_exec(req: ExecRequest) -> dict:
     flow_cls, params, seed_kwargs = get_regime(req.regime, flow="hawkes")
     side = Side.SELL if req.side.upper() == "SELL" else Side.BUY
@@ -134,7 +158,7 @@ def _run_exec(req: ExecRequest) -> dict:
     costs = []
     for i in range(req.n_episodes):
         cb = run_episode(
-            get_execution(req.algo)(),
+            _make_algo(req, side),
             task,
             flow_cls,
             params,
