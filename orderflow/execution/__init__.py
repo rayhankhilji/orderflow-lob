@@ -1,10 +1,12 @@
 """Execution stack: schedule algos, cost accounting, RL environment.
 
 Importing this package registers all built-in algos in ``orderflow.registry``
-("twap", "twap_passive", "vwap", "ac", "learned", "rl").
+("twap", "twap_passive", "twap_capped", "vwap", "ac", "ac_adaptive",
+"learned", "rl").
 """
 
 from orderflow.execution import (  # noqa: F401
+    adaptive,
     almgren_chriss,
     base,
     cost,
@@ -15,6 +17,7 @@ from orderflow.execution import (  # noqa: F401
     types,
     vwap,
 )
+from orderflow.execution.adaptive import AdaptiveAC, CappedTWAP  # noqa: F401
 from orderflow.execution.almgren_chriss import (  # noqa: F401
     AlmgrenChriss,
     ac_cost_variance,
