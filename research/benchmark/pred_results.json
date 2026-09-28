@@ -1,0 +1,64 @@
+{
+  "normal": {
+    "logistic": {
+      "short_vol_nll": 2.918137207095112,
+      "mid_move_nll": 0.8222054087587172,
+      "mid_move_acc": 0.6514862538958924,
+      "mid_move_brier": 0.47028591725052266,
+      "spread_change_nll": 1.1206919283135375,
+      "spread_change_acc": 0.6357166116202261,
+      "spread_change_brier": 0.5435392174805863,
+      "cancel_prob_nll": 0.6719886009632022,
+      "cancel_prob_brier": 0.4789502234086748,
+      "cancel_prob_auc": 0.5243940810414446,
+      "queue_depletion_nll": 0.5405384308634453,
+      "queue_depletion_brier": 0.3598921766213131,
+      "queue_depletion_auc": 0.8123759182321291,
+      "next_type_nll": 1.717337712374059,
+      "next_type_acc": 0.2542680374005675,
+      "next_type_brier": 0.8092682630241166
+    },
+    "markov": {
+      "short_vol_nll": 0.0,
+      "next_type_nll": 1.6923897069983123,
+      "next_type_acc": 0.26785132809229195,
+      "next_type_brier": 0.8011338232749383
+    },
+    "mlp": {
+      "short_vol_nll": 2.1057642001126493,
+      "mid_move_nll": 0.7553215200614062,
+      "mid_move_acc": 0.6554868121133182,
+      "mid_move_brier": 0.43445231031001313,
+      "spread_change_nll": 0.940090357765677,
+      "spread_change_acc": 0.6581383448853328,
+      "spread_change_brier": 0.45550736760697585,
+      "cancel_prob_nll": 0.6777133763962113,
+      "cancel_prob_brier": 0.48460835908851335,
+      "cancel_prob_auc": 0.4778577172416288,
+      "queue_depletion_nll": 0.42383944298861703,
+      "queue_depletion_brier": 0.2693145056736638,
+      "queue_depletion_auc": 0.780382681695521,
+      "next_type_nll": 1.7064887339187573,
+      "next_type_acc": 0.255524026608364,
+      "next_type_brier": 0.805977131960296
+    },
+    "transformer": {
+      "short_vol_nll": 24.464240891592844,
+      "next_type_nll": 1.943345906655839,
+      "next_type_acc": 0.22900869888821695,
+      "next_type_brier": 0.875776687889727,
+      "mid_move_nll": 1.0819550121857464,
+      "mid_move_acc": 0.49974415034656,
+      "mid_move_brier": 0.6385390171995201,
+      "spread_change_nll": 1.3065628609134023,
+      "spread_change_acc": 0.5644973717262873,
+      "spread_change_brier": 0.6332784259767295,
+      "cancel_prob_nll": 0.6936694795265892,
+      "cancel_prob_brier": 0.49979377486664806,
+      "cancel_prob_auc": 0.5096857189277934,
+      "queue_depletion_nll": 0.5472686524196746,
+      "queue_depletion_brier": 0.3590109546204107,
+      "queue_depletion_auc": 0.48907227205904263
+    }
+  }
+}
