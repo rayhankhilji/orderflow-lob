@@ -481,21 +481,28 @@ def _run_probe(req: ProbeRequest) -> dict:
     """Run a fresh episode and ask the trained MLP what it expects next."""
     ck_path = _MODELS_DIR / "mlp_mid_move.pt"
     baked = REPO_ROOT / "web/public/demo/probe.json"
-    if not ck_path.exists():
+    try:
+        import torch
+
+        from orderflow.models.baselines import MLPBaseline
+        from orderflow.models.dataset import TARGET_KEYS
+        from orderflow.models.features import tokenize
+        from orderflow.models.targets import make_targets
+
+        have_stack = ck_path.exists()
+    except ImportError:
+        have_stack = False
+    if not have_stack:
         if baked.exists():
             out = json.loads(baked.read_text())
-            out["note"] = "baked fixture — no local checkpoint (train via scripts/final_eval.py)"
+            out["note"] = (
+                "baked fixture — no local checkpoint or ml extra "
+                "(train via scripts/final_eval.py)"
+            )
             return out
         raise ValueError(
             "no trained checkpoint — run scripts/final_eval.py to produce artifacts/models/"
         )
-
-    import torch
-
-    from orderflow.models.baselines import MLPBaseline
-    from orderflow.models.dataset import TARGET_KEYS
-    from orderflow.models.features import tokenize
-    from orderflow.models.targets import make_targets
     flow_cls, params, seed_kwargs = get_regime(req.regime, flow=req.flow)
     rng = np.random.default_rng(req.seed)
     book = LimitOrderBook(tick_size=0.01)

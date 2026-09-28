@@ -18,6 +18,7 @@ os.environ.setdefault("ORDERFLOW_SYNC", "1")
 
 from orderflow.api.app import app
 
+
 # public/ is edge-served when outputDirectory is honored; mount it inside the
 # function too so "/" never 404s regardless of routing order.
 @app.get("/api/debug")

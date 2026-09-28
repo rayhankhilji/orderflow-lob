@@ -1,0 +1,16 @@
+.venv/
+artifacts/
+docs/
+tests/
+scripts/
+node_modules/
+web/node_modules/
+web/dist/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.hypothesis/
+.git/
+AGENTS.md
+ARCHITECTURE.md
+EVALUATION.md
