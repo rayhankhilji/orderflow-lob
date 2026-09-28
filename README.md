@@ -1,5 +1,7 @@
 # OrderFlow
 
+> **[▶ Live demo](https://rayhankhilji.github.io/orderflow-lob/)** — the research console, static build (baked data)
+
 **A limit-order-book research and simulation environment** — matching engine,
 stochastic order-flow generators, point-process statistics, neural event
 models, an optimal-execution stack, adversarial participants, and a benchmark
@@ -207,8 +209,30 @@ uvicorn orderflow.api.app:app --port 8000     # API
 cd web && npm install && npm run dev          # http://localhost:5173
 ```
 
-`POST /api/sim` and `/api/exec` enqueue jobs; the React console renders the
-mid path, the L2 depth ladder, and the event tape, plus a leaderboard view.
+**Live demo:** https://rayhankhilji.github.io/orderflow-lob/ — the same
+console as a static build serving baked run data (no backend needed;
+rebuilt via `python scripts/bake_demo.py && VITE_DEMO=1 npm run build`).
+
+The console is a microscope for the machinery, not just a runner:
+
+- **Execution anatomy** — every exec run returns a per-decision trace:
+  the mid path with the algo's fills (dot size = shares), the inventory
+  trajectory against the TWAP reference line, and a decision log of what
+  it placed and when. Toggle any subset of the five adversaries on the
+  run and watch e.g. `twap_passive` + `withdrawer` blow up live.
+- **Almgren–Chriss frontier explorer** — closed-form, instant: slide
+  risk-aversion λ and watch the E[cost]/std[cost] point move along the
+  frontier while the optimal inventory schedule reshapes below.
+- **Microstructure stats** — fit OFI→Δmid (β, r², t-stat, 1 s and 10 s
+  windows), Kyle λ, excess kurtosis, and vol-clustering/trade-sign ACFs
+  on a tape generated fresh per click.
+- **Model lab** — the predictor benchmark table (held-out NLL per
+  target per model, best cell highlighted) plus a live probe: the trained
+  MLP's predicted P(mid move ↓/→/↑) vs what the tape actually did.
+
+API additions: `/api/frontier`, `/api/stats`, `/api/models`,
+`/api/probe`, `/api/adversaries`; `/api/exec` accepts `adversaries` and
+returns a decision `trace`.
 
 ## Research branches
 
