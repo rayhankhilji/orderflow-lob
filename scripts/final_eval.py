@@ -195,7 +195,9 @@ def main() -> None:
     bench = run_matrix(mlp, net, args.seed)
     ART.mkdir(exist_ok=True)
     (ART / "final_bench.json").write_text(json.dumps(bench, indent=2))
-    survivors = write_leaderboard(bench, {}, out_dir=".", md_path="LEADERBOARD.md")
+    pred_path = Path("research/benchmark/pred_results.json")
+    pred = json.loads(pred_path.read_text()) if pred_path.exists() else {}
+    survivors = write_leaderboard(bench, pred, out_dir=".", md_path="LEADERBOARD.md")
     print(json.dumps(survivors["execution"], indent=2))
     print("[final] wrote LEADERBOARD.md + survivors.json + artifacts/final_bench.json")
 

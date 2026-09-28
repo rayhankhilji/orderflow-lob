@@ -155,6 +155,16 @@ survives only with completion ≥ 99.9% in *every* regime (adversarial cells
 included). Latest generated table: `LEADERBOARD.md` + `survivors.json`
 (repo root, reproduced by `python scripts/final_eval.py`).
 
+**Final verdict (seed base 200): `learned` survives best** — robust score
+−8.53 across five regimes and still completes under the combined attack.
+`ac_adaptive` and `ac` also survive clean; but under attack static AC
+manages only 50% completion on the flagship task (its front-loaded slices
+are footprint-detectable) and the PPO policy collapses to 0% — trained on
+the clean regime, its features go off-distribution under adversary flow.
+The schedule algos are eliminated by the completion gate on `normal`,
+where the deadline backstop fires into an empty bid side. Full matrix and
+methodology: `EVALUATION.md`.
+
 ## The console
 
 ```

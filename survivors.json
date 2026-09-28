@@ -1,0 +1,48 @@
+{
+  "execution": {
+    "ac": true,
+    "ac@combined": false,
+    "ac_adaptive": true,
+    "ac_adaptive@combined": true,
+    "learned": true,
+    "learned@combined": true,
+    "rl": true,
+    "rl@combined": false,
+    "twap": false,
+    "twap@combined": true,
+    "twap_capped": false,
+    "twap_capped@combined": true,
+    "twap_passive": false,
+    "twap_passive@combined": false,
+    "vwap": false,
+    "vwap@combined": true
+  },
+  "prediction": {
+    "logistic": true,
+    "mlp": true,
+    "transformer": true
+  },
+  "scores_exec": {
+    "ac": 0.02878542820742993,
+    "ac@combined": -58.84836775878198,
+    "ac_adaptive": -6.90087386364049,
+    "ac_adaptive@combined": -43.59831373617105,
+    "learned": -8.528783246361344,
+    "learned@combined": -41.91213440335385,
+    "rl": -6.042736512709064,
+    "rl@combined": -27.318685717376777,
+    "twap": -0.4882380684037725,
+    "twap@combined": -12.723447641081094,
+    "twap_capped": 4.492702057354871,
+    "twap_capped@combined": 0.6326746050152883,
+    "twap_passive": 4.111515387859216,
+    "twap_passive@combined": 15.907988437481244,
+    "vwap": -0.4882380684037725,
+    "vwap@combined": -12.723447641081094
+  },
+  "wins_pred": {
+    "logistic": "4/6",
+    "mlp": "4/6",
+    "transformer": "4/6"
+  }
+}

@@ -35,14 +35,55 @@ targets.
 
 ## Execution results (seed base 200)
 
-*Filled in by `scripts/final_eval.py` — see `LEADERBOARD.md` at repo root
-and `artifacts/final_bench.json` for the raw numbers.*
+Raw numbers: `artifacts/final_bench.json`; rendered: `LEADERBOARD.md`.
+`algo@combined` rows are the same algo rerun under the five-adversary
+attack; they are scored as separate entries so clean and adversarial
+verdicts are both visible.
 
-Headline from the run: **AC is the survivor of record** — best robust
-score, completes everywhere including under the combined attack. Adaptive
-AC is the low-dispersion alternative (std ≈ half of TWAP's); passive TWAP
-fails the completion gate; the PPO policy at this training budget is
-near-uniform and lands close to TWAP.
+**Clean regimes** (exec/normal/volatile/thin/stressed, mean IS bps;
+negative = beat arrival):
+
+| algo | exec | normal | volatile | thin | stressed | score | verdict |
+|---|---|---|---|---|---|---|---|
+| learned | −43.9 | +1.6 | +1.2 | −0.3 | −0.8 | **−8.53** | **SURVIVES** |
+| ac_adaptive | −33.6 | +0.2 | +2.8 | +1.2 | +0.6 | −6.90 | SURVIVES |
+| rl | −32.0 | −3.4 | +4.4 | +0.8 | +0.3 | −6.04 | SURVIVES |
+| ac | −17.4 | −1.1 | +5.5 | +1.8 | −0.1 | +0.03 | SURVIVES |
+| twap / vwap | −11.1 | −0.6 | +2.2 | −0.2 | −5.7 | −0.49 | eliminated |
+| twap_capped | +1.8 | +0.8 | +2.2 | −0.5 | −3.5 | +4.49 | eliminated |
+| twap_passive | +3.9 | +0.7 | +5.8 | +0.1 | −2.4 | +4.11 | eliminated |
+
+The completion gate is what eliminates the schedule algos, not cost:
+on `normal` (4 000 shares / 600 s ≈ 40% of natural volume) they finish
+at 25–75% — the deadline-liquidation backstop fires into an empty bid
+side at t=T and the residue can't clear. That is the mechanism the
+adversarial branch documented, occurring *naturally* on a thin book.
+
+**Adversarial cells** (combined five-participant attack):
+
+| algo@combined | exec IS / done | thin IS / done | verdict |
+|---|---|---|---|
+| ac_adaptive | −64.5 / 100% | −0.5 / 100% | SURVIVES |
+| learned | −57.5 / 100% | −0.3 / 100% | SURVIVES |
+| twap / vwap | −34.8 / 100% | +0.5 / 100% | (completes under attack) |
+| twap_capped | −3.3 / 100% | +0.3 / 100% | (completes under attack) |
+| ac | −82.5 / **50%** | +0.3 / 75% | eliminated |
+| rl | −49.1 / **0%** | −1.0 / 100% | eliminated |
+| twap_passive | +9.1 / 100% | +4.9 / 75% | eliminated |
+
+**Verdict of record: `learned` wins** — best clean robust score, and
+one of only two entries that complete everywhere under attack. Two
+adversarial results deserve emphasis:
+
+- **Static AC fails under attack despite −82 bps.** Its front-loaded
+  schedule fires large detectable slices; the withdrawer pulls bids on
+  the footprint and the unfilled residue has no time left — 50%
+  completion on exec. Cheap IS on the filled half doesn't rescue it.
+- **RL collapses to 0% under attack.** The PPO policy was trained on
+  the clean `exec` regime; adversary order flow moves its observation
+  features off the training distribution and it stops executing. A
+  textbook train/test-distribution failure — kept in the table because
+  it's the most instructive cell in the matrix.
 
 ## Prediction results (`normal`, seeds 77+, `research/benchmark/pred_results.json`)
 
