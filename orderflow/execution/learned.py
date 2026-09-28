@@ -19,7 +19,6 @@ With no predictor the signal is 0 and the policy reduces to plain AC.
 from __future__ import annotations
 
 import numpy as np
-import torch
 
 from orderflow.book.book import LimitOrderBook
 from orderflow.book.types import Side
@@ -43,6 +42,8 @@ class TorchSignal:
         self.side = side
 
     def signal(self, state_vec: np.ndarray) -> float:
+        import torch
+
         x = torch.tensor(state_vec, dtype=torch.float32).reshape(1, 1, -1)
         out = self.predictor.predict({"state": x})
         probs = np.asarray(out.get("mid_move")).reshape(-1)

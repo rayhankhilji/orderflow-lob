@@ -1,0 +1,6 @@
+{
+  "buildCommand": "cd web && npm ci --no-audit && npm run build -- --outDir ../public --emptyOutDir",
+  "functions": {
+    "main.py": { "maxDuration": 60, "memory": 1024 }
+  }
+}

@@ -48,12 +48,18 @@ function useJob() {
   const submit = async (path, body, onDone) => {
     setBusy(true); setErr(null);
     try {
-      const { job_id } = await api(path, {
+      const resp = await api(path, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      poll(job_id, (j) => {
+      if (resp.job_id === undefined) {
+        // serverless mode: the endpoint ran inline and returned the result
+        setBusy(false);
+        onDone(resp);
+        return;
+      }
+      poll(resp.job_id, (j) => {
         setBusy(false);
         if (j.status === "error") setErr(j.error);
         else onDone(j.result);

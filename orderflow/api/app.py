@@ -11,10 +11,10 @@ from __future__ import annotations
 
 import json
 import math
+import os
 from pathlib import Path
 
 import numpy as np
-import torch
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -159,7 +159,32 @@ def _run_sim(req: SimRequest) -> dict:
     }
 
 
-_MODELS_DIR = Path("artifacts/models")
+_MODELS_DIR = REPO_ROOT / "artifacts/models"
+
+# Serverless mode (ORDERFLOW_SYNC=1, used by the Vercel deployment):
+# no background jobs — each POST runs inline and returns the result, with
+# request sizes clamped so a call fits inside a single function invocation.
+SYNC = os.environ.get("ORDERFLOW_SYNC") == "1"
+SYNC_CAPS = {
+    "sim_horizon": 300.0,
+    "exec_horizon": 600.0,
+    "exec_qty_exec": 40_000,
+    "exec_qty_other": 8_000,
+    "exec_episodes": 2,
+    "exec_adversaries": 3,
+    "stats_horizon": 600.0,
+    "probe_horizon": 180.0,
+}
+
+
+def _sync_or_job(kind: str, fn):
+    """Serverless: run inline now. Local: enqueue a background job."""
+    if SYNC:
+        try:
+            return fn()
+        except (ValueError, KeyError) as e:
+            raise HTTPException(400, str(e)) from e
+    return {"job_id": jobs.submit(kind, fn).id}
 
 
 def _make_algo(req: ExecRequest, side: Side):
@@ -170,16 +195,24 @@ def _make_algo(req: ExecRequest, side: Side):
     Without them they degrade to plain AC / TWAP-slice behavior.
     """
     if req.algo == "learned" and (_MODELS_DIR / "mlp_mid_move.pt").exists():
-        from orderflow.execution.learned import LearnedPolicy, TorchSignal
-        from orderflow.models.baselines import MLPBaseline
+        try:
+            from orderflow.execution.learned import LearnedPolicy, TorchSignal
+            from orderflow.models.baselines import MLPBaseline
 
-        return LearnedPolicy(
-            predictor=TorchSignal(MLPBaseline.load(_MODELS_DIR / "mlp_mid_move.pt"), side)
-        )
+            return LearnedPolicy(
+                predictor=TorchSignal(
+                    MLPBaseline.load(_MODELS_DIR / "mlp_mid_move.pt"), side
+                )
+            )
+        except ImportError:  # torch not installed — fall through to AC spine
+            pass
     if req.algo == "rl" and (_MODELS_DIR / "ppo_exec.pt").exists():
-        from orderflow.execution.rl.policy import RLExecution
+        try:
+            from orderflow.execution.rl.policy import RLExecution
 
-        return RLExecution().load_policy(str(_MODELS_DIR / "ppo_exec.pt"))
+            return RLExecution().load_policy(str(_MODELS_DIR / "ppo_exec.pt"))
+        except ImportError:
+            pass
     return get_execution(req.algo)()
 
 
@@ -245,7 +278,7 @@ def _run_exec(req: ExecRequest) -> dict:
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"ok": True}
+    return {"ok": True, "sync": SYNC}
 
 
 @app.get("/api/regimes")
@@ -262,16 +295,32 @@ def algos() -> dict:
 def run_sim(req: SimRequest) -> dict:
     if req.regime not in REGIMES:
         raise HTTPException(400, f"unknown regime {req.regime!r}")
-    job = jobs.submit("sim", lambda: _run_sim(req))
-    return {"job_id": job.id}
+    if SYNC:
+        req = req.model_copy(
+            update={"horizon": min(req.horizon, SYNC_CAPS["sim_horizon"])}
+        )
+    return _sync_or_job("sim", lambda: _run_sim(req))
 
 
 @app.post("/api/exec")
 def run_exec(req: ExecRequest) -> dict:
     if req.algo not in list_execution():
         raise HTTPException(400, f"unknown algo {req.algo!r}")
-    job = jobs.submit("exec", lambda: _run_exec(req))
-    return {"job_id": job.id}
+    if SYNC:
+        qty_cap = (
+            SYNC_CAPS["exec_qty_exec"]
+            if req.regime == "exec"
+            else SYNC_CAPS["exec_qty_other"]
+        )
+        req = req.model_copy(
+            update={
+                "horizon": min(req.horizon, SYNC_CAPS["exec_horizon"]),
+                "total_qty": min(req.total_qty, qty_cap),
+                "n_episodes": min(req.n_episodes, SYNC_CAPS["exec_episodes"]),
+                "adversaries": req.adversaries[: SYNC_CAPS["exec_adversaries"]],
+            }
+        )
+    return _sync_or_job("exec", lambda: _run_exec(req))
 
 
 @app.get("/api/jobs")
@@ -412,8 +461,11 @@ def _run_stats(req: StatsRequest) -> dict:
 def run_stats(req: StatsRequest) -> dict:
     if req.regime not in REGIMES:
         raise HTTPException(400, f"unknown regime {req.regime!r}")
-    job = jobs.submit("stats", lambda: _run_stats(req))
-    return {"job_id": job.id}
+    if SYNC:
+        req = req.model_copy(
+            update={"horizon": min(req.horizon, SYNC_CAPS["stats_horizon"])}
+        )
+    return _sync_or_job("stats", lambda: _run_stats(req))
 
 
 @app.get("/api/models")
@@ -427,16 +479,23 @@ def models() -> dict:
 
 def _run_probe(req: ProbeRequest) -> dict:
     """Run a fresh episode and ask the trained MLP what it expects next."""
+    ck_path = _MODELS_DIR / "mlp_mid_move.pt"
+    baked = REPO_ROOT / "web/public/demo/probe.json"
+    if not ck_path.exists():
+        if baked.exists():
+            out = json.loads(baked.read_text())
+            out["note"] = "baked fixture — no local checkpoint (train via scripts/final_eval.py)"
+            return out
+        raise ValueError(
+            "no trained checkpoint — run scripts/final_eval.py to produce artifacts/models/"
+        )
+
+    import torch
+
     from orderflow.models.baselines import MLPBaseline
     from orderflow.models.dataset import TARGET_KEYS
     from orderflow.models.features import tokenize
     from orderflow.models.targets import make_targets
-
-    ck_path = _MODELS_DIR / "mlp_mid_move.pt"
-    if not ck_path.exists():
-        raise ValueError(
-            "no trained checkpoint — run scripts/final_eval.py to produce artifacts/models/"
-        )
     flow_cls, params, seed_kwargs = get_regime(req.regime, flow=req.flow)
     rng = np.random.default_rng(req.seed)
     book = LimitOrderBook(tick_size=0.01)
@@ -490,5 +549,8 @@ def _run_probe(req: ProbeRequest) -> dict:
 def probe(req: ProbeRequest) -> dict:
     if req.regime not in REGIMES:
         raise HTTPException(400, f"unknown regime {req.regime!r}")
-    job = jobs.submit("probe", lambda: _run_probe(req))
-    return {"job_id": job.id}
+    if SYNC:
+        req = req.model_copy(
+            update={"horizon": min(req.horizon, SYNC_CAPS["probe_horizon"])}
+        )
+    return _sync_or_job("probe", lambda: _run_probe(req))

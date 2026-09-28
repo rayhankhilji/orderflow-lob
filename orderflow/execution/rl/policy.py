@@ -9,7 +9,6 @@ policy transfers without modification.
 from __future__ import annotations
 
 import numpy as np
-import torch
 
 from orderflow.book.book import LimitOrderBook
 from orderflow.execution.live import LiveFeatures
@@ -28,6 +27,8 @@ class RLExecution:
         self._prev_mid = 0.0
 
     def load_policy(self, path: str, obs_dim: int = 8, n_actions: int = 11):
+        import torch
+
         from orderflow.execution.rl.ppo import ActorCritic
 
         net = ActorCritic(obs_dim, n_actions)

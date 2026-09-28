@@ -7,19 +7,28 @@ name = "orderflow"
 version = "0.1.0"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "torch>=2.2.2,<2.3",
     "numpy>=1.26,<2",
     "scipy>=1.11,<1.14",
-    "pandas>=2.0,<2.3",
-    "gymnasium>=0.29",
-    "matplotlib>=3.8",
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",
     "websockets>=12",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "hypothesis", "ruff", "httpx2"]
+# models/RL stack — heavy; kept optional so the book+sim+stats+API core
+# deploys slim (e.g. serverless). Everything degrades gracefully without it:
+# `learned` falls back to the AC spine, `rl` to TWAP slices.
+ml = ["torch>=2.2.2,<2.3", "gymnasium>=0.29", "pandas>=2.0,<2.3", "matplotlib>=3.8"]
+dev = [
+    "torch>=2.2.2,<2.3",
+    "gymnasium>=0.29",
+    "pandas>=2.0,<2.3",
+    "matplotlib>=3.8",
+    "pytest",
+    "hypothesis",
+    "ruff",
+    "httpx2",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["orderflow"]
