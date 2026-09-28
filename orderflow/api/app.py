@@ -336,6 +336,16 @@ def job_detail(job_id: int) -> dict:
     return jobs.public(job)
 
 
+def _baked_fixture(name: str) -> dict | None:
+    """Demo fixture: bundled under public/ in the serverless deploy
+    (includeFiles: public/**), sourced from web/public/ in local dev."""
+    for base in ("web/public", "public"):
+        p = REPO_ROOT / base / "demo" / name
+        if p.exists():
+            return json.loads(p.read_text())
+    return None
+
+
 @app.get("/api/leaderboard")
 def leaderboard() -> dict:
     lb = REPO_ROOT / "LEADERBOARD.md"
@@ -345,6 +355,11 @@ def leaderboard() -> dict:
         out["leaderboard_md"] = lb.read_text()
     if sv.exists():
         out["survivors"] = json.loads(sv.read_text())
+    if out["leaderboard_md"] is None or out["survivors"] is None:
+        baked = _baked_fixture("leaderboard.json")
+        if baked:
+            out["leaderboard_md"] = out["leaderboard_md"] or baked.get("leaderboard_md")
+            out["survivors"] = out["survivors"] or baked.get("survivors")
     return out
 
 
@@ -474,13 +489,17 @@ def models() -> dict:
     out = {"pred_bench": None, "targets": None}
     if pred.exists():
         out["pred_bench"] = json.loads(pred.read_text())
+    else:
+        baked = _baked_fixture("models.json")
+        if baked:
+            out.update(baked)
     return out
 
 
 def _run_probe(req: ProbeRequest) -> dict:
     """Run a fresh episode and ask the trained MLP what it expects next."""
     ck_path = _MODELS_DIR / "mlp_mid_move.pt"
-    baked = REPO_ROOT / "web/public/demo/probe.json"
+    baked = _baked_fixture("probe.json")
     try:
         import torch
 
@@ -493,8 +512,8 @@ def _run_probe(req: ProbeRequest) -> dict:
     except ImportError:
         have_stack = False
     if not have_stack:
-        if baked.exists():
-            out = json.loads(baked.read_text())
+        if baked is not None:
+            out = baked
             out["note"] = (
                 "baked fixture — no local checkpoint or ml extra "
                 "(train via scripts/final_eval.py)"
