@@ -1,6 +1,7 @@
 # OrderFlow
 
-> **[▶ Live demo](https://rayhankhilji.github.io/orderflow-lob/)** — the research console, static build (baked data)
+> **[▶ Live app](https://orderflow-snowy.vercel.app)** — full stack on Vercel: React console + FastAPI serverless backend (live sims, no torch)
+> **[▶ Static demo](https://rayhankhilji.github.io/orderflow-lob/)** — GitHub Pages mirror, baked fixture data
 
 **A limit-order-book research and simulation environment** — matching engine,
 stochastic order-flow generators, point-process statistics, neural event
@@ -209,9 +210,17 @@ uvicorn orderflow.api.app:app --port 8000     # API
 cd web && npm install && npm run dev          # http://localhost:5173
 ```
 
-**Live demo:** https://rayhankhilji.github.io/orderflow-lob/ — the same
-console as a static build serving baked run data (no backend needed;
-rebuilt via `python scripts/bake_demo.py && VITE_DEMO=1 npm run build`).
+**Deployments:**
+
+- **Vercel (full stack):** https://orderflow-snowy.vercel.app — the FastAPI
+  backend runs as a Python serverless function (`main.py`, `ORDERFLOW_SYNC=1`
+  so requests return results inline) and the React build is served from
+  `public/`. Deployed via `vercel deploy --prod`; heavy ML deps (torch,
+  gymnasium) live in the `ml` extra so the function bundle stays slim —
+  `learned`/`rl`/`/api/probe` fall back to baked fixtures there.
+- **GitHub Pages (static):** https://rayhankhilji.github.io/orderflow-lob/ —
+  the same console serving baked run data from `docs/demo/` (no backend;
+  rebuilt via `python scripts/bake_demo.py && VITE_DEMO=1 npm run build`).
 
 The console is a microscope for the machinery, not just a runner:
 
