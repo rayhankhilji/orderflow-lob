@@ -40,38 +40,47 @@ def simulate(params: HawkesParams, T: float, rng: np.random.Generator) -> list[n
 def _loglik(
     event_times: list[np.ndarray], T: float, mu: np.ndarray, alpha: np.ndarray, beta: np.ndarray
 ) -> float:
-    """Total log-likelihood of the multivariate Hawkes process on [0, T]."""
+    """Total log-likelihood of the multivariate Hawkes process on [0, T].
+
+    R_ij(t) = sum_{t_l < t} exp(-beta_ij (t - t_l)) is maintained with an
+    amortised pointer walk per (i, j): pure-Python ``math.exp`` in the inner
+    loop keeps each eval at ~O(N) flops instead of paying NumPy-scalar
+    overhead per event.
+    """
+    import math
+
     n = len(event_times)
+    ts = [list(map(float, e)) for e in event_times]
     ll = 0.0
     for i in range(n):
-        ti = event_times[i]
-        R = np.zeros(n)
-        ptrs = np.zeros(n, dtype=int)
-        prev = 0.0
-        lam_sum = 0.0
-        for k in range(len(ti)):
-            tk = ti[k]
-            decay = np.exp(-beta[i] * (tk - prev))
-            acc = np.zeros(n)
-            for j in range(n):
-                tj = event_times[j]
-                while ptrs[j] < len(tj) and tj[ptrs[j]] < tk:
-                    acc[j] += np.exp(-beta[i, j] * (tk - tj[ptrs[j]]))
-                    ptrs[j] += 1
-            R = decay * R + acc
-            lam = mu[i] + float((alpha[i] * R).sum())
-            if lam <= 0:
-                return -np.inf
-            lam_sum += np.log(lam)
-            prev = tk
+        ti = ts[i]
+        lam = [0.0] * len(ti)
+        for j in range(n):
+            tj = ts[j]
+            b = float(beta[i, j])
+            a = float(alpha[i, j])
+            r = 0.0
+            ptr = 0
+            prev = 0.0
+            for k in range(len(ti)):
+                tk = ti[k]
+                r *= math.exp(-b * (tk - prev))
+                while ptr < len(tj) and tj[ptr] < tk:
+                    r += math.exp(-b * (tk - tj[ptr]))
+                    ptr += 1
+                lam[k] += a * r
+                prev = tk
+        lam_arr = np.asarray(lam) + mu[i]
+        if np.any(lam_arr <= 0):
+            return -np.inf
         comp = mu[i] * T
         for j in range(n):
-            tj = event_times[j]
+            tj = np.asarray(ts[j])
             if len(tj):
                 comp += (alpha[i, j] / beta[i, j]) * float(
                     (1.0 - np.exp(-beta[i, j] * (T - tj))).sum()
                 )
-        ll += lam_sum - comp
+        ll += float(np.log(lam_arr).sum()) - comp
     return ll
 
 
