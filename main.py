@@ -26,4 +26,15 @@ if _PUBLIC.exists():
 
     app.mount("/", StaticFiles(directory=str(_PUBLIC), html=True), name="web")
 
+
+@app.get("/api/debug")
+def _debug() -> dict:
+    root = Path(__file__).resolve().parent
+    return {
+        "cwd": os.getcwd(),
+        "root_files": sorted(p.name for p in root.iterdir())[:40],
+        "public_exists": _PUBLIC.exists(),
+    }
+
+
 __all__ = ["app"]
